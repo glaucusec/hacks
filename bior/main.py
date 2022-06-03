@@ -1,10 +1,11 @@
 import requests
 import urllib.parse
 import argparse, json
-
+from bs4 import BeautifulSoup
+import pdfkit, sys
 
 def find_api():
-    f = open("api_key.json")
+    f = open("api.json")
     data = json.load(f)
     global api_key 
     api_key = data['key']
@@ -14,6 +15,20 @@ def read_from_file(read_file_name):
     content = f.read()
     f.close()
     return content
+
+def output_as_html(content, filename):
+    content = send_request(content)
+    soup = BeautifulSoup(content, 'html.parser')
+    pretty_content = soup.prettify()
+    try:
+        f = open(filename + ".html", 'w')
+        f.write(pretty_content)
+    finally:
+        f.close()
+
+def output_as_pdf(content, filename):
+    content = send_request(content)
+    pdfkit.from_string(content, str(filename) + ".pdf")
     
 def send_request(content):
     global api_key
@@ -52,9 +67,10 @@ if args.file:
 if args.output:
     if args.output:
         name = args.output.split(".")
-        if name[1] == "html":
-            print("html")
-        elif name[1] == "pdf":
-            print("pdf")
-    # write_file_name = args.output
-    # print(write_file_name)
+        if len(name) != 2:
+            sys.exit("Incorret output file format.\n (eg: file.html, file.pdf)")
+        else:
+            if name[1] == "html":
+                output_as_html(content, name[0])
+            elif name[1] == "pdf":
+                output_as_pdf(content, name[0])
